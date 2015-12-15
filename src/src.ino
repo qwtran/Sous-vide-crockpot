@@ -1,7 +1,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define TARGET_TEMP 100
+#define TARGET_TEMP 165
 #define DELAY 15000
 
 #define ONE_WIRE_BUS 3
@@ -11,7 +11,7 @@ OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with 
 DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Temperature. 
 DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }; // Setup themometer address
 
-float Kp = 2500;
+float Kp = 7000;
 float Ki = 0;
 float Kd = 0;
 
