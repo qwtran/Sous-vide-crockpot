@@ -11,8 +11,8 @@ OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with 
 DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Temperature. 
 DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }; // Setup themometer address
 
-float Kp = 7000;
-float Ki = 0;
+float Kp = 6300;
+float Ki = 6.8727273;
 float Kd = 0;
 
 float input, output;
