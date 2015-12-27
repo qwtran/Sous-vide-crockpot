@@ -8,6 +8,7 @@
 #define RELAY_PIN  8
 
 static float initialIntegralError = 4000;   // Initialize controller integral error
+static float integratorRange = 2;     // The maximum error allowable for integrator to be active
 
 
 OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
@@ -47,12 +48,14 @@ float calculatePID()
   pastError = error;
   error = TARGET_TEMP - input;
 
-  proportional = Kp * error;
+  proportional = Kp * error;    // calculate the proportional term
 
-  errorSum = errorSum + error * ( currentTime - pastTime );
-  integral = Ki * errorSum;
+  if( (error >= (-1)*integratorRange) && (error <= integratorRange) ) {  // Only calculate integrator term if error is within range
+    errorSum = errorSum + error * ( currentTime - pastTime );
+    integral = Ki * errorSum;
+  }
   
-  derivative = Kd * ( error - pastError) / (currentTime - pastTime );
+  derivative = Kd * ( error - pastError) / (currentTime - pastTime );   // calculate the derivative term
 
   output = proportional + integral + derivative;
 }
