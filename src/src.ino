@@ -1,13 +1,13 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define TARGET_TEMP 150
+#define TARGET_TEMP 130
 #define PERIOD 15000
 
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
 
-static float initialIntegralError = 4000;   // Initialize controller integral error
+static float initialIntegralError = 0;   // Initialize controller integral error in seconds
 static float integratorRange = 2;     // The maximum error allowable for integrator to be active
 
 
@@ -50,10 +50,10 @@ float calculatePID()
 
   proportional = Kp * error;    // calculate the proportional term
 
-  if( (error >= (-1)*integratorRange) && (error <= integratorRange) ) {  // Only calculate integrator term if error is within range
+  if( (error >= (-1)*integratorRange) && (error <= integratorRange) ) {  // Only sum integrator term if error is within range
     errorSum = errorSum + error * ( currentTime - pastTime );
-    integral = Ki * errorSum;
   }
+  integral = Ki * errorSum;
   
   derivative = Kd * ( error - pastError) / (currentTime - pastTime );   // calculate the derivative term
 
