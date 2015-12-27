@@ -1,18 +1,21 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define TARGET_TEMP 165
-#define DELAY 15000
+#define TARGET_TEMP 150
+#define PERIOD 15000
 
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
+
+static float initialIntegralError = 4000;   // Initialize controller integral error
+
 
 OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
 DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Temperature. 
 DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }; // Setup themometer address
 
-float Kp = 7100;
-float Ki = .008;
+float Kp = 3000;
+float Ki = .005;
 float Kd = 0;
 
 float input, output;
@@ -29,7 +32,8 @@ void setup(void)
   pinMode(RELAY_PIN, OUTPUT); // Set relay pin 8 to output pin
 
   input = output = 0;
-  error = pastError = errorSum = 0;
+  error = pastError = 0;
+  errorSum = initialIntegralError / Ki;
   pastTime = currentTime = 0;
 }
 
@@ -70,7 +74,7 @@ void printData()
   Serial.print("\t");
   Serial.print(input);
   Serial.print("\t");
-  Serial.print(output);
+  Serial.print(output/1000);
   Serial.print("\n");
 }
 
@@ -83,24 +87,24 @@ void loop(void)
   digitalWrite(RELAY_PIN, HIGH);
 
    //VN code
-   //off_time = DELAY - output
+   //off_time = PERIOD - output
    //if off_time < 0
    //turn off
-   //delay(DELAY)
-   //else if off_time between 0 and DELAY
+   //delay(PERIOD)
+   //else if off_time between 0 and PERIOD
    //delay(output)
    //turn off
    //else
-   //delay(DELAY)
+   //delay(PERIOD)
    //turn off
    //end
 
   if(output < 0)
   {
     delay(0);
-  } else if(output > DELAY)
+  } else if(output > PERIOD)
   {
-    delay(DELAY);
+    delay(PERIOD);
   } else
   {
     delay(output);
@@ -108,15 +112,15 @@ void loop(void)
 
   digitalWrite(RELAY_PIN, LOW);
 
-  if(DELAY - output < 0)
+  if(PERIOD - output < 0)
   {
     delay(0);
-  } else if(DELAY - output > DELAY)
+  } else if(PERIOD - output > PERIOD)
   {
-    delay(DELAY);
+    delay(PERIOD);
   } else
   {
-    delay(DELAY - output);
+    delay(PERIOD - output);
   }
 }
 
