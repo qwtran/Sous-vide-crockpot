@@ -7,7 +7,7 @@
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
 
-static float initialIntegralError = 0;   // Initialize controller integral error in seconds
+static float initialIntegralError = 5000;   // Initialize controller integral error in seconds
 static float integratorRange = 2;     // The maximum error allowable for integrator to be active
 
 
