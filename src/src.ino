@@ -17,7 +17,7 @@ DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }
 
 float Kp = 3000;
 float Ki = .0025;
-float Kd = 70;
+float Kd = 250000000;
 
 float input, output;
 float error, pastError, errorSum;
@@ -55,7 +55,7 @@ float calculatePID()
   }
   integral = Ki * errorSum;
   
-  derivative = Kd * (( error - pastError) / (currentTime - pastTime ));   // calculate the derivative term
+  derivative = Kd * ((error - pastError) / (currentTime - pastTime));   // calculate the derivative term
 
   output = proportional + integral + derivative;
 }
@@ -85,7 +85,7 @@ void printData()
   Serial.print("\t");
   Serial.print(integral/1000);
   Serial.print("\t");
-  Serial.print(derivative);
+  Serial.print(derivative/1000);
   Serial.print("\n");
 }
 
