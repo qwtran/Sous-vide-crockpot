@@ -7,8 +7,8 @@
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
 
-static float initialIntegralError = 5000;   // Initialize controller integral error in seconds
-static float integratorRange = 2;     // The maximum error allowable for integrator to be active
+static float initialIntegralError = 3700;   // Initialize controller integral error in msec
+static float integratorRange = 1;     // The maximum error allowable for integrator to be active
 
 
 OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
@@ -16,13 +16,14 @@ DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Te
 DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }; // Setup themometer address
 
 float Kp = 3000;
-float Ki = .005;
-float Kd = 0;
+float Ki = .0025;
+float Kd = 70;
 
 float input, output;
 float error, pastError, errorSum;
 unsigned long pastTime, currentTime;
 
+float proportional, integral, derivative;
 
 void setup(void)
 {
@@ -36,13 +37,12 @@ void setup(void)
   error = pastError = 0;
   errorSum = initialIntegralError / Ki;
   pastTime = currentTime = 0;
+  proportional = integral = derivative = 0;
 }
 
 float calculatePID()
 {
-  float proportional, integral, derivative;
-
-  // Setup
+  // PID setup
   pastTime = currentTime;
   currentTime = millis();
   pastError = error;
@@ -55,7 +55,7 @@ float calculatePID()
   }
   integral = Ki * errorSum;
   
-  derivative = Kd * ( error - pastError) / (currentTime - pastTime );   // calculate the derivative term
+  derivative = Kd * (( error - pastError) / (currentTime - pastTime ));   // calculate the derivative term
 
   output = proportional + integral + derivative;
 }
@@ -73,11 +73,19 @@ float getTemp(DeviceAddress deviceAddress)
 
 void printData()
 {
+  Serial.print( ((currentTime/1000)%60)/100.0 + currentTime/60000);
+  Serial.print("\t");
   Serial.print(currentTime/1000);
   Serial.print("\t");
   Serial.print(input);
   Serial.print("\t");
   Serial.print(output/1000);
+  Serial.print("\t");
+  Serial.print(proportional/1000);
+  Serial.print("\t");
+  Serial.print(integral/1000);
+  Serial.print("\t");
+  Serial.print(derivative);
   Serial.print("\n");
 }
 
@@ -87,43 +95,41 @@ void loop(void)
   calculatePID();
   printData();
 
-  digitalWrite(RELAY_PIN, HIGH);
-
-   //VN code
-   //off_time = PERIOD - output
-   //if off_time < 0
-   //turn off
-   //delay(PERIOD)
-   //else if off_time between 0 and PERIOD
-   //delay(output)
-   //turn off
-   //else
-   //delay(PERIOD)
-   //turn off
-   //end
-
-  if(output < 0)
-  {
-    delay(0);
-  } else if(output > PERIOD)
-  {
+  if(output < 0) {
     delay(PERIOD);
-  } else
-  {
+  } else if (output >= 0 && output <= PERIOD) {
+    digitalWrite(RELAY_PIN, HIGH);
     delay(output);
-  }
-
-  digitalWrite(RELAY_PIN, LOW);
-
-  if(PERIOD - output < 0)
-  {
-    delay(0);
-  } else if(PERIOD - output > PERIOD)
-  {
-    delay(PERIOD);
-  } else
-  {
+    digitalWrite(RELAY_PIN, LOW);
     delay(PERIOD - output);
+  } else if (output > PERIOD) {
+    digitalWrite(RELAY_PIN, HIGH);
+    delay(PERIOD);
+    digitalWrite(RELAY_PIN, LOW);
   }
-}
 
+//  if(output < 0)
+//  {
+//    delay(0);
+//  } else if(output > PERIOD)
+//  {
+//    delay(PERIOD);
+//  } else
+//  {
+//    delay(output);
+//  }
+
+//  digitalWrite(RELAY_PIN, LOW);
+
+//  if(PERIOD - output < 0)
+//  {
+//    delay(0);
+//  } else if(PERIOD - output > PERIOD)
+//  {
+//    delay(PERIOD);
+//  } else
+//  {
+//    delay(PERIOD - output);
+//  }
+
+}
