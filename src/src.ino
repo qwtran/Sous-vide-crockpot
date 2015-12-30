@@ -96,6 +96,7 @@ void loop(void)
   printData();
 
   if(output < 0) {
+    digitalWrite(RELAY_PIN, LOW);
     delay(PERIOD);
   } else if (output >= 0 && output <= PERIOD) {
     digitalWrite(RELAY_PIN, HIGH);
@@ -105,31 +106,6 @@ void loop(void)
   } else if (output > PERIOD) {
     digitalWrite(RELAY_PIN, HIGH);
     delay(PERIOD);
-    digitalWrite(RELAY_PIN, LOW);
+    //digitalWrite(RELAY_PIN, LOW);
   }
-
-//  if(output < 0)
-//  {
-//    delay(0);
-//  } else if(output > PERIOD)
-//  {
-//    delay(PERIOD);
-//  } else
-//  {
-//    delay(output);
-//  }
-
-//  digitalWrite(RELAY_PIN, LOW);
-
-//  if(PERIOD - output < 0)
-//  {
-//    delay(0);
-//  } else if(PERIOD - output > PERIOD)
-//  {
-//    delay(PERIOD);
-//  } else
-//  {
-//    delay(PERIOD - output);
-//  }
-
 }
