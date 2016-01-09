@@ -109,6 +109,6 @@ void loop(void)
   } else if (output > PERIOD) {
     digitalWrite(RELAY_PIN, HIGH);
     delay(PERIOD);
-    //digitalWrite(RELAY_PIN, LOW);
+    //digitalWrite(RELAY_PIN, LOW);   // This comment out is to prevent switching too frequently on high
   }
 }
