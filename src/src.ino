@@ -1,11 +1,13 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <Wire.h>
 
 #define TARGET_TEMP 140
 #define PERIOD 15000
 
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
+#define I2C_SLAVE_ADDRESS 0x04
 
 static float initialIntegralError = 3700;   // Initialize controller integral error in msec
 static float integratorRange = 1;     // The maximum error allowable for integrator to be active
@@ -28,6 +30,7 @@ float proportional, integral, derivative;
 void setup(void)
 {
   Serial.begin(9600);
+  Wire.begin(I2C_SLAVE_ADDRESS);    // I2C Set up Arduino as slave
   sensors.begin();  // Start up the library
   sensors.setResolution(thermoAddress, 12); // Set the resolution to 10 bit (good enough?)
 
