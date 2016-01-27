@@ -27,6 +27,10 @@ unsigned long pastTime, currentTime;
 
 float proportional, integral, derivative;
 
+byte Data[8];
+volatile byte* Float1ArrayPtr;
+volatile byte* Float2ArrayPtr;
+
 void setup(void)
 {
   Serial.begin(9600);
@@ -47,8 +51,17 @@ void setup(void)
 
 
 void sendData() {
-  Wire.write(currentTime);
-  Wire.write((byte*) &input, sizeof(float));
+  Float1ArrayPtr = (byte*) &currentTime;
+  Data[0] = Float1ArrayPtr[0];
+  Data[1] = Float1ArrayPtr[1];
+  Data[2] = Float1ArrayPtr[2];
+  Data[3] = Float1ArrayPtr[3];
+  Float2ArrayPtr = (byte*) &input;
+  Data[4] = Float2ArrayPtr[0];
+  Data[5] = Float2ArrayPtr[1];
+  Data[6] = Float2ArrayPtr[2];
+  Data[7] = Float2ArrayPtr[3];
+  Wire.write(Data, 8);
   Serial.println("Data Reqested!");
 }
 
