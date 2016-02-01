@@ -6,7 +6,7 @@ import struct
 import sys
 
 pairs = {0:0}
-interval_ms = 1500
+interval_ms = 15000
 
 # set up i2c connection
 address = 0x04
@@ -21,7 +21,7 @@ class MainHandler(tornado.web.RequestHandler):
             self.write('<p>')
 
 def schedule_func():
-    # request from i2c
+    # request to i2c
     arrayData = bus.read_i2c_block_data(address,0x00)
     # extract time from the first 32 bit
     time = arrayData[0]
@@ -45,7 +45,7 @@ def main():
     app = tornado.web.Application([
         (r"/", MainHandler),
     ])
-    app.listen(8000)
+    app.listen(80)
     main_loop.start()
 
 if __name__ == "__main__":
