@@ -14,11 +14,11 @@ bus = smbus.SMBus(1)
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        for key, value in pairs.iteritems():
-            self.write(str(key))
-            self.write('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;')
-            self.write(str(value))
-            self.write('<p>')
+        self.render("index.html")
+
+    def post(self):
+        self.render("index.html")
+        print self.get_body_argument("temp")
 
 def schedule_func():
     # request to i2c
