@@ -1,6 +1,4 @@
 #include <OneWire.h>
-#include <DallasTemperature.h>
-#include <Wire.h>
 
 #define TARGET_TEMP 135
 #define PERIOD 15000
@@ -12,10 +10,11 @@
 static float initialIntegralError = 1700;   // Initialize controller integral error in msec
 static float integratorRange = 1;     // The maximum error allowable for integrator to be active
 
-
-OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
-DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Temperature. 
+OneWire ds(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
 DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }; // Setup themometer address
+int temp_0[2];
+long previousMillis = 0;        // will store last time DS was updated
+long interval = 1000;           // interval at which to read temp (milliseconds)
 
 float Kp = 3000;
 float Ki = .0025;
@@ -121,6 +120,53 @@ void printData()
   Serial.print("\t");
   Serial.print(derivative/1000);
   Serial.print("\n");
+}
+
+void send_for_temp(byte addr[8]) {
+  ds.reset();
+  ds.select(addr);
+  ds.write(0x44,1);         // start conversion, with parasite power on at the end
+}
+
+void read_temp(byte addr[8], int number) {
+  byte i;
+  byte data[12];
+
+  ds.reset();
+  ds.select(addr);
+  ds.write(0xBE);         // Read Scratchpad
+
+  for (i = 0; i < 9; i++) {           // we need 9 bytes
+    data[i] = ds.read();
+  }
+
+  int HighByte, LowByte, TReading, SignBit, Tc_100, Whole, Fract;
+
+  LowByte = data[0];
+  HighByte = data[1];
+  TReading = (HighByte << 8) + LowByte;
+  SignBit = TReading & 0x8000;  // test most sig bit
+
+  if (SignBit) { // negative
+    TReading = (TReading ^ 0xffff) + 1; // 2's comp
+  }
+
+  Tc_100 = 50 * TReading; // multiply by 100 * 0.5
+  Whole = Tc_100 / 100;  // separate off the whole and fractional portions
+  Fract = Tc_100 % 100;
+
+ switch (number){
+  case 0:
+    temp_0[0] = Whole;
+    temp_0[1] = Fract;
+    break;
+  case 1:
+    temp_1[0] = Whole;
+    temp_1[1] = Fract;
+    break;
+  default:
+    break;
+  }
 }
 
 void loop(void)
