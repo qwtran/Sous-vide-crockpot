@@ -2,14 +2,14 @@
 #include <DallasTemperature.h>
 #include <Wire.h>
 
-#define TARGET_TEMP 133
+#define TARGET_TEMP 135
 #define PERIOD 15000
 
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
 #define I2C_SLAVE_ADDRESS 0x04
 
-static float initialIntegralError = 3860;   // Initialize controller integral error in msec
+static float initialIntegralError = 1700;   // Initialize controller integral error in msec
 static float integratorRange = 1;     // The maximum error allowable for integrator to be active
 
 
@@ -39,6 +39,7 @@ void setup(void)
   sensors.setResolution(thermoAddress, 12); // Set the resolution to 10 bit (good enough?)
 
   Wire.onRequest(sendData);
+  Wire.onReceive(receiveData);
 
   pinMode(RELAY_PIN, OUTPUT); // Set relay pin 8 to output pin
 
@@ -63,6 +64,14 @@ void sendData() {
   Data[7] = Float2ArrayPtr[3];
   Wire.write(Data, 8);
   Serial.println("Data Reqested!");
+}
+
+void receiveData(int num) {
+  Serial.println("Received Data!");
+  while (Wire.available() > 0) {
+    byte i = Wire.read();
+    Serial.println(i);
+  }
 }
 
 float calculatePID()
