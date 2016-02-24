@@ -2,7 +2,7 @@
 #include <DallasTemperature.h>
 
 #define TARGET_TEMP 135
-#define PERIOD 15000
+#define PERIOD 15000    // In milli seconds
 
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
@@ -19,7 +19,7 @@ OneWire ds(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any O
 float temp_0[2];
 byte temperatureAddress[8];
 long previousMillis = 0;        // will store last time DS was updated
-long interval = 1000;           // interval at which to read temp (milliseconds)
+long tempInterval = 1000;           // interval at which to read temp (milliseconds)
 
 float Kp = 3000;
 float Ki = .0025;
@@ -154,15 +154,11 @@ void loop(void)
     //digitalWrite(RELAY_PIN, LOW);   // This comment out is to prevent switching too frequently on high
   }*/
 
-  if (millis() - previousMillis > interval) {  // OVERFLOW????
+  if (millis() - previousMillis > tempInterval) {  // OVERFLOW????
     previousMillis = millis();
-    //reading data from old requests:
     read_temp(temperatureAddress);
-    //sending new requests:
     send_for_temp(temperatureAddress);
     Serial.print(temp_0[0]);
-    //Serial.print(".");
-    // Serial.print(temp_0[1]);
     Serial.print("\t");
     Serial.print(getTemp(thermoAddress));
     Serial.print("\n");
