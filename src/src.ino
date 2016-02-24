@@ -1,25 +1,25 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define TARGET_TEMP 135
-#define PERIOD 15000    // In milli seconds
+#define TARGET_TEMP 71
+#define PID_INTERVAL 15000 // interval in milliseconds
+#define TEMP_INTERVAL 1000 // interval at which to read temp (milliseconds)
 
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
 #define I2C_SLAVE_ADDRESS 0x04
 
+unsigned long pastTemp, pastPID;
+
 static float initialIntegralError = 1700;   // Initialize controller integral error in msec
 static float integratorRange = 1;     // The maximum error allowable for integrator to be active
 
-OneWire oneWire(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
-DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Temperature.
-DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }; // Setup themometer address
-
 OneWire ds(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
-float temp_0[2];
 byte temperatureAddress[8];
-long previousMillis = 0;        // will store last time DS was updated
-long tempInterval = 1000;           // interval at which to read temp (milliseconds)
+
+class PID {
+  
+};
 
 float Kp = 3000;
 float Ki = .0025;
@@ -31,8 +31,7 @@ unsigned long pastTime, currentTime;
 
 float proportional, integral, derivative;
 
-float calculatePID()
-{
+float calculatePID() { // make into class with static variables in future
   // PID setup
   pastTime = currentTime;
   currentTime = millis();
@@ -51,8 +50,7 @@ float calculatePID()
   output = proportional + integral + derivative;
 }
 
-void printData()
-{
+void printData() {
   Serial.print( ((currentTime/1000)%60)/100.0 + currentTime/60000);
   Serial.print("\t");
   Serial.print(currentTime/1000);
@@ -101,66 +99,39 @@ void read_temp(byte temperatureAddress[8]) {
   Whole = Tc_100 / 100;  // separate off the whole and fractional portions
   Fract = Tc_100 % 100;
 
-  temp_0[0] = (float) Tc_100 / 100;
-  temp_0[0] = temp_0[0] * 1.8 + 32;
+  input = (float) Tc_100 / 100;
+  input = input * 1.8 + 32;
 }
 
-float getTemp(DeviceAddress deviceAddress)
-{
-  sensors.requestTemperatures();
-  float tempC = sensors.getTempC(deviceAddress);
-  if (tempC == -127.00) {
-    Serial.print("Error getting temperature");
-  } else {
-    return DallasTemperature::toFahrenheit(tempC);
-  }
-}
-
-void setup(void)
-{
+void setup(void) {
   Serial.begin(9600);
   pinMode(RELAY_PIN, OUTPUT); // Set relay pin 8 to output pin
 
   ds.search(temperatureAddress);
   send_for_temp(temperatureAddress);
 
-  sensors.begin();  // Start up the library
-  sensors.setResolution(thermoAddress, 12); // Set the resolution to 10 bit (good enough?)
-
   input = output = 0;
   error = pastError = 0;
   errorSum = initialIntegralError / Ki;
   pastTime = currentTime = 0;
   proportional = integral = derivative = 0;
+  pastTime = currentTime = 0;
 }
 
-void loop(void)
-{/*
-  input = getTemp(thermotemperatureAddress);
-  calculatePID();
-  printData();
-
-  if(output < 0) {
-    digitalWrite(RELAY_PIN, LOW);
-    delay(PERIOD);
-  } else if (output >= 0 && output <= PERIOD) {
-    digitalWrite(RELAY_PIN, HIGH);
-    delay(output);
-    digitalWrite(RELAY_PIN, LOW);
-    delay(PERIOD - output);
-  } else if (output > PERIOD) {
-    digitalWrite(RELAY_PIN, HIGH);
-    delay(PERIOD);
-    //digitalWrite(RELAY_PIN, LOW);   // This comment out is to prevent switching too frequently on high
-  }*/
-
-  if (millis() - previousMillis > tempInterval) {  // OVERFLOW????
-    previousMillis = millis();
+void loop(void) {
+  if (millis() - pastTemp > TEMP_INTERVAL) {  // OVERFLOW????
+    pastTemp = millis();
     read_temp(temperatureAddress);
     send_for_temp(temperatureAddress);
-    Serial.print(temp_0[0]);
-    Serial.print("\t");
-    Serial.print(getTemp(thermoAddress));
-    Serial.print("\n");
   }
+
+  if(millis() - pastPID > PID_INTERVAL) { //time to shift the Relay Window
+    pastPID = pastPID + PID_INTERVAL;
+    calculatePID();
+    printData();
+  }
+  if(millis() - pastPID < output)
+    digitalWrite(RELAY_PIN,HIGH);
+  else
+    digitalWrite(RELAY_PIN,LOW);
 }
