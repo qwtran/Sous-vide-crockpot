@@ -16,9 +16,8 @@ DallasTemperature sensors(&oneWire);  // Pass our oneWire reference to Dallas Te
 DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }; // Setup themometer address
 
 OneWire ds(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
-//DeviceAddress thermoAddress = { 0x28, 0xFF, 0xE3, 0xC8, 0x64, 0x15, 0x02, 0x6D }; // Setup themometer address
 float temp_0[2];
-byte ds_addr0[8];
+byte temperatureAddress[8];
 long previousMillis = 0;        // will store last time DS was updated
 long interval = 1000;           // interval at which to read temp (milliseconds)
 
@@ -70,21 +69,20 @@ void printData()
   Serial.print("\n");
 }
 
-void send_for_temp(byte addr[8]) {
+void send_for_temp(byte temperatureAddress[8]) {
   ds.reset();
-  ds.select(addr);
+  ds.select(temperatureAddress);
   ds.write(0x44,1);         // start conversion, with parasite power on at the end
 }
 
-void read_temp(byte addr[8], int number) {
-  byte i;
+void read_temp(byte temperatureAddress[8]) {
   byte data[12];
 
   ds.reset();
-  ds.select(addr);
+  ds.select(temperatureAddress);
   ds.write(0xBE);         // Read Scratchpad
 
-  for (i = 0; i < 9; i++) {           // we need 9 bytes
+  for (byte i = 0; i < 9; i++) {           // we need 9 bytes
     data[i] = ds.read();
   }
 
@@ -99,18 +97,9 @@ void read_temp(byte addr[8], int number) {
     TReading = (TReading ^ 0xffff) + 1; // 2's comp
   }
 
-  Tc_100 = (6 * TReading) + TReading / 4;
+  Tc_100 = (6 * TReading) + TReading / 4;  // multiply by (100 * 0.0625) or 6.25
   Whole = Tc_100 / 100;  // separate off the whole and fractional portions
   Fract = Tc_100 % 100;
-
- switch (number){
-  case 0:
-    temp_0[0] = Whole;
-    temp_0[1] = Fract;
-    break;
-  default:
-    break;
-  }
 
   temp_0[0] = (float) Tc_100 / 100;
   temp_0[0] = temp_0[0] * 1.8 + 32;
@@ -132,8 +121,8 @@ void setup(void)
   Serial.begin(9600);
   pinMode(RELAY_PIN, OUTPUT); // Set relay pin 8 to output pin
 
-  ds.search(ds_addr0);
-  send_for_temp(ds_addr0);
+  ds.search(temperatureAddress);
+  send_for_temp(temperatureAddress);
 
   sensors.begin();  // Start up the library
   sensors.setResolution(thermoAddress, 12); // Set the resolution to 10 bit (good enough?)
@@ -147,7 +136,7 @@ void setup(void)
 
 void loop(void)
 {/*
-  input = getTemp(thermoAddress);
+  input = getTemp(thermotemperatureAddress);
   calculatePID();
   printData();
 
@@ -168,9 +157,9 @@ void loop(void)
   if (millis() - previousMillis > interval) {  // OVERFLOW????
     previousMillis = millis();
     //reading data from old requests:
-    read_temp(ds_addr0, 0);
+    read_temp(temperatureAddress);
     //sending new requests:
-    send_for_temp(ds_addr0);
+    send_for_temp(temperatureAddress);
     Serial.print(temp_0[0]);
     //Serial.print(".");
     // Serial.print(temp_0[1]);
