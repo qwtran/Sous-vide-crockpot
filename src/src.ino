@@ -1,18 +1,23 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <LCD16x2.h>
+#include <Wire.h>
 
-#define TARGET_TEMP 65
 #define PID_INTERVAL 15000 // interval in milliseconds
 #define TEMP_INTERVAL 1000 // interval at which to read temp (milliseconds)
+#define BUTTON_INTERVAL 100 // interval to read button
 
 #define ONE_WIRE_BUS 3
 #define RELAY_PIN  8
 #define I2C_SLAVE_ADDRESS 0x04
 
-unsigned long pastTemp, pastPID;
+unsigned long pastTemp, pastPID, pastButton;
+byte temperatureAddress[8];
+int buttons;
+bool tempUnitF;
 
 OneWire ds(ONE_WIRE_BUS);  // Setup a oneWire instance to communicate with any OneWire devices
-byte temperatureAddress[8];
+LCD16x2 lcd;
 
 class PID {
   public:
@@ -20,6 +25,7 @@ class PID {
     float Ki = .0025;
     float Kd = 300000000;
 
+    int setpoint;
     float input, output;
     float error, pastError, errorSum;
     unsigned long pastTime, currentTime;
@@ -29,6 +35,7 @@ class PID {
     float integratorRange = 1;     // The maximum error allowable for integrator to be active
 
     PID() {
+      setpoint = 130;
       input = output = 0;
       error = pastError = 0;
       errorSum = initialIntegralError / Ki;
@@ -42,7 +49,7 @@ class PID {
       pastTime = currentTime;
       currentTime = millis();
       pastError = error;
-      error = TARGET_TEMP - input;
+      error = setpoint - input;
 
       proportional = Kp * error;    // calculate the proportional term
 
@@ -114,19 +121,75 @@ void read_temp(byte temperatureAddress[8]) {
 
 void setup(void) {
   Serial.begin(9600);
+  Wire.begin(); // Start I2C for LCD Display
+
   pinMode(RELAY_PIN, OUTPUT); // Set relay pin 8 to output pin
 
   ds.search(temperatureAddress);  // Set up temperature
   send_for_temp(temperatureAddress);  // Get temperature
+
+  tempUnitF = true;
+
+  // Configure LCD
+  lcd.lcdClear();
+
+  lcd.lcdGoToXY(2,1);
+  lcd.lcdWrite("SET (F):");
+
+  lcd.lcdGoToXY(2,2);
+  lcd.lcdWrite("CURRENT:");
 }
 
 void loop(void) {
+  // Button interval
+  if (millis() - pastButton > BUTTON_INTERVAL) {  // Update temp every interval
+    pastButton = millis();
+
+    buttons = lcd.readButtons();
+
+    if(buttons == 14)    // button 1, subtract 1
+      myPID.setpoint = myPID.setpoint - 1;    // decrease setpoint
+    if(buttons == 13)    // button 2, subtract 2
+      if(myPID.setpoint < 145)    // don't allow higher than 145
+        myPID.setpoint = myPID.setpoint + 1;    // increase setpoint
+    if(buttons == 7) {    // button 4, subtract 8
+      tempUnitF = !tempUnitF;
+      if(tempUnitF) {
+        lcd.lcdClear();
+        lcd.lcdGoToXY(2,1);
+        lcd.lcdWrite("SET (F):");  // Diplsay F
+        lcd.lcdGoToXY(2,2);
+        lcd.lcdWrite("CURRENT:");
+      } else {
+        lcd.lcdClear();
+        lcd.lcdGoToXY(2,1);
+        lcd.lcdWrite("SET (C):");  // Diplsay C
+        lcd.lcdGoToXY(2,2);
+        lcd.lcdWrite("CURRENT:");
+      }
+    }
+
+    if(tempUnitF) {             // Display temps in F
+      lcd.lcdGoToXY(11,1);
+      lcd.lcdWrite(myPID.setpoint);   // Display setpoint
+      lcd.lcdGoToXY(11,2);
+      lcd.lcdWrite(myPID.input,2);    // Display current temp
+    } else {                  // Display temps in C
+      lcd.lcdGoToXY(11,1);
+      lcd.lcdWrite(((float)myPID.setpoint - 32)/1.8, 2);   // Display setpoint
+      lcd.lcdGoToXY(11,2);
+      lcd.lcdWrite(((float)myPID.input - 32) / 1.8, 2);   // Display current temp
+    }
+  }
+
+  // Temperature interval
   if (millis() - pastTemp > TEMP_INTERVAL) {  // Update temp every interval
     pastTemp = millis();
     read_temp(temperatureAddress);  // Get temp from device
     send_for_temp(temperatureAddress);  // Ask device to update temperature for next read
   }
 
+  // PID Interval
   if(millis() - pastPID > PID_INTERVAL) { // Run PID every interval
     pastPID = pastPID + PID_INTERVAL;
     myPID.calculatePID();
