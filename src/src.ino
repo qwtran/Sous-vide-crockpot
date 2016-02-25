@@ -35,7 +35,7 @@ class PID {
     float integratorRange = 1;     // The maximum error allowable for integrator to be active
 
     PID() {
-      setpoint = 130;
+      setpoint = 131;
       input = output = 0;
       error = pastError = 0;
       errorSum = initialIntegralError / Ki;
